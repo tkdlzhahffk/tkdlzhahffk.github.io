@@ -3,7 +3,7 @@
  * Tue, 18 Feb 2020 13:42:16 GMT
  * Developed by Relaxeaza <twoverflow@outlook.com>
  *
- * This work is free. You can redistribute it anㅈd/or modify it under the
+ * This work is free. You can redistribute it and/or modify it under the
  * terms of the Do What The Fuck You Want To Public License, Version 2,
  * as published by Sam Hocevar. See the LICENCE file for more details.
  */
@@ -6291,8 +6291,8 @@ define('two/farmOverflow', [
     let $player
     let unitsData
     const VILLAGE_COMMAND_LIMIT = 50
-    const MINIMUM_FARMER_CYCLE_INTERVAL = 4 * 1000
-    const MINIMUM_ATTACK_INTERVAL = 1 * 150 /* important 중요 시간 타임 원래 1000이었던거 500 했다가 200으로 바꿈 */
+    const MINIMUM_FARMER_CYCLE_INTERVAL = 5 * 1000
+    const MINIMUM_ATTACK_INTERVAL = 1 * 200 /* 500 important */
 
     const STORAGE_KEYS = {
         LOGS: 'farm_overflow_logs',
@@ -9987,4 +9987,660 @@ define('two/ui', [
             if (cdnConf.versionMap[path]) {
                 httpService.get(path, success, error)
             } else {
-                success(t
+                success(templates[path], 304)
+            }
+        }
+    }
+
+    interfaceOverflow.init = function () {
+        if (initialized) {
+            return false
+        }
+
+        initialized = true
+        interfaceOverflow.addStyle('.two-window a.select-handler{-webkit-box-shadow:none;box-shadow:none}.two-window .small-select a.select-handler{height:22px;line-height:22px}.two-window .small-select a.select-button{height:22px}.two-window input::placeholder{color:rgba(255,243,208,0.7)}.two-window .green{color:#07770b}.two-window .red{color:#770707}.two-window .blue{color:#074677}#toolbar-left{height:calc(100% - 273px) !important;top:165px !important}.two-menu-container{position:absolute;top:84px;left:0;width:90px;z-index:10}.two-menu-container:hover .two-main-button{background-position:0 -75px}.two-menu-container:hover .two-menu{opacity:1;visibility:visible;transition:opacity .1s ease-in-out}.two-main-button{left:0;width:75px;height:75px;background-image:url(https://i.imgur.com/J0JFhf4.png);background-position:0 0;z-index:10}.two-menu{position:absolute;top:8px;left:85px;width:120px;display:flex;flex-flow:wrap;visibility:hidden;opacity:0;z-index:10}.two-menu .button{height:24px;padding:0 15px;line-height:22px;margin-bottom:8px}#wrapper.window-open .two-menu-container{left:713px}#wrapper.window-open.window-fullsize .two-menu-container{display:none !important}')
+    }
+
+    interfaceOverflow.addTemplate = function (path, data) {
+        templates[path] = data
+    }
+
+    interfaceOverflow.addStyle = function (styles) {
+        let $style = document.createElement('style')
+        $style.type = 'text/css'
+        $style.appendChild(document.createTextNode(styles))
+        $head.appendChild($style)
+    }
+
+    interfaceOverflow.addMenuButton = function (label, order, _tooltip) {
+        buildMenuContainer()
+
+        let $button = document.createElement('div')
+        $button.className = 'btn-border btn-green button'
+        $button.innerHTML = label
+        $button.style.order = order
+        $menu.appendChild($button)
+
+        if (typeof _tooltip === 'string') {
+            $button.addEventListener('mouseenter', function (event) {
+                $rootScope.$broadcast(eventTypeProvider.TOOLTIP_SHOW, 'twoverflow-tooltip', _tooltip, true, event)
+            })
+
+            $button.addEventListener('mouseleave', function () {
+                $rootScope.$broadcast(eventTypeProvider.TOOLTIP_HIDE, 'twoverflow-tooltip')
+            })
+        }
+
+        return $menu.appendChild($button)
+    }
+
+    interfaceOverflow.isInitialized = function () {
+        return initialized
+    }
+
+    return interfaceOverflow
+})
+
+require([
+    'two/ui'
+], function (interfaceOverflow) {
+    if (interfaceOverflow.isInitialized()) {
+        return false
+    }
+
+    interfaceOverflow.init()
+})
+
+})(this)r.COMMAND_SENT, commandSentListener)
+        $rootScope.$on(eventTypeProvider.MESSAGE_ERROR, commandErrorListener)
+        $rootScope.$on(eventTypeProvider.REPORT_NEW, reportListener)
+    }
+
+    farmOverflow.start = function () {
+        let readyFarmers
+
+        if (running) {
+            return false
+        }
+
+        if (!selectedPresets.length) {
+            eventQueue.trigger(eventTypeProvider.FARM_OVERFLOW_STOP, {
+                reason: ERROR_TYPES.NO_PRESETS
+            })
+
+            return false
+        }
+
+        running = true
+        readyFarmers = []
+
+        farmers.forEach(function (farmer) {
+            readyFarmers.push(new Promise(function (resolve) {
+                farmer.init().then(resolve)
+            }))
+        })
+
+        if (!readyFarmers.length) {
+            running = false
+            return false
+        }
+
+        Promise.all(readyFarmers).then(function () {
+            farmOverflow.farmerStep()
+        })
+
+        eventQueue.trigger(eventTypeProvider.FARM_OVERFLOW_START)
+
+        addLog(LOG_TYPES.FARM_START)
+    }
+
+    farmOverflow.stop = function (reason) {
+        reason = reason || ERROR_TYPES.USER_STOP
+
+        if (activeFarmer) {
+            activeFarmer.stop(reason)
+        }
+
+        running = false
+
+        clearTimeout(farmerTimeoutId)
+        farmerTimeoutId = null
+
+        eventQueue.trigger(eventTypeProvider.FARM_OVERFLOW_STOP, {
+            reason: reason
+        })
+
+        if (reason === ERROR_TYPES.USER_STOP) {
+            addLog(LOG_TYPES.FARM_STOP)
+        }
+    }
+
+    farmOverflow.createAll = function () {
+        angular.forEach($player.getVillages(), function (village, villageId) {
+            farmOverflow.create(villageId)
+        })
+
+        eventQueue.trigger(eventTypeProvider.FARM_OVERFLOW_FARMER_VILLAGES_UPDATED)
+    }
+
+    farmOverflow.create = function (villageId) {
+        const groupsOnly = settings.get(SETTINGS.GROUP_ONLY)
+
+        villageId = parseInt(villageId, 10)
+
+        if (groupsOnly.length && !onlyVillages.includes(villageId)) {
+            return false
+        }
+
+        if (ignoredVillages.includes(villageId)) {
+            return false
+        }
+
+        if (!farmOverflow.getById(villageId)) {
+            farmers.push(new Farmer(villageId))
+        }
+
+        return farmOverflow.getById(villageId)
+    }
+
+    farmOverflow.flush = function () {
+        const groupsOnly = settings.get(SETTINGS.GROUP_ONLY)
+        let removeIds = []
+
+        farmers.forEach(function (farmer) {
+            let villageId = farmer.getVillage().getId()
+
+            if (groupsOnly.length && !onlyVillages.includes(villageId)) {
+                removeIds.push(villageId)
+            } else if (ignoredVillages.includes(villageId)) {
+                removeIds.push(villageId)
+            }
+        })
+
+        if (removeIds.length) {
+            removeIds.forEach(function (removeId) {
+                farmOverflow.removeById(removeId)
+            })
+
+            eventQueue.trigger(eventTypeProvider.FARM_OVERFLOW_FARMER_VILLAGES_UPDATED)
+        }
+    }
+
+    farmOverflow.getById = function (farmerId) {
+        for (let i = 0; i < farmers.length; i++) {
+            if (farmers[i].getVillage().getId() === farmerId) {
+                return farmers[i]
+            }
+        }
+
+        return false
+    }
+
+    farmOverflow.getAll = function () {
+        return farmers
+    }
+
+    farmOverflow.removeById = function (farmerId) {
+        for (let i = 0; i < farmers.length; i++) {
+            if (farmers[i].getVillage().getId() === farmerId) {
+                farmers[i].stop()
+                farmers.splice(i, i + 1)
+
+                return true
+            }
+        }
+
+        return false
+    }
+
+    farmOverflow.getOne = function () {
+        if (!farmers.length) {
+            return false
+        }
+
+        if (farmerIndex >= farmers.length) {
+            farmerIndex = 0
+            return false
+        }
+
+        return farmers[farmerIndex]
+    }
+
+    farmOverflow.farmerStep = function () {
+        activeFarmer = farmOverflow.getOne()
+
+        if (!activeFarmer) {
+            let interval = settings.get(SETTINGS.FARMER_CYCLE_INTERVAL) * 60 * 1000
+            interval += MINIMUM_FARMER_CYCLE_INTERVAL
+
+            farmerTimeoutId = setTimeout(function() {
+                farmerTimeoutId = null
+                farmerIndex = 0
+                farmOverflow.farmerStep()
+            }, interval)
+
+            return
+        }
+
+        activeFarmer.onceCycleEnd(function () {
+            farmerIndex++
+            farmOverflow.farmerStep()
+        })
+
+        activeFarmer.start()
+    }
+
+    farmOverflow.isTarget = function (targetId) {
+        for (let i = 0; i < farmers.length; i++) {
+            let farmer = farmers[i]
+            let targets = farmer.getTargets()
+
+            for (let j = 0; j < targets.length; j++) {
+                let target = targets[j]
+
+                if (target.id === targetId) {
+                    return true
+                }
+            }
+        }
+
+        return false
+    }
+
+    farmOverflow.removeTarget = function (targetId) {
+        farmers.forEach(function (farmer) {
+            farmer.removeTarget(targetId)
+        })
+    }
+
+    farmOverflow.getSettings = function () {
+        return settings
+    }
+
+    farmOverflow.getExceptionVillages = function () {
+        return {
+            included: includedVillages,
+            ignored: ignoredVillages
+        }
+    }
+
+    farmOverflow.getExceptionLogs = function () {
+        return exceptionLogs
+    }
+
+    farmOverflow.isInitialized = function () {
+        return initialized
+    }
+
+    farmOverflow.isRunning = function () {
+        return running
+    }
+
+    farmOverflow.getLogs = function () {
+        return logs
+    }
+
+    farmOverflow.clearLogs = function () {
+        logs = []
+        Lockr.set(STORAGE_KEYS.LOGS, logs)
+        eventQueue.trigger(eventTypeProvider.FARM_OVERFLOW_LOGS_UPDATED)
+
+        return logs
+    }
+
+    return farmOverflow
+})
+
+define('two/farmOverflow/events', [], function () {
+    angular.extend(eventTypeProvider, {
+        FARM_OVERFLOW_START: 'farm_overflow_start',
+        FARM_OVERFLOW_STOP: 'farm_overflow_stop',
+        FARM_OVERFLOW_INSTANCE_READY: 'farm_overflow_instance_ready',
+        FARM_OVERFLOW_INSTANCE_START: 'farm_overflow_instance_start',
+        FARM_OVERFLOW_INSTANCE_STOP: 'farm_overflow_instance_stop',
+        FARM_OVERFLOW_INSTANCE_ERROR_NO_TARGETS: 'farm_overflow_instance_error_no_targets',
+        FARM_OVERFLOW_INSTANCE_ERROR_NOT_READY: 'farm_overflow_instance_error_not_ready',
+        FARM_OVERFLOW_INSTANCE_STEP_ERROR: 'farm_overflow_instance_command_error',
+        FARM_OVERFLOW_PRESETS_LOADED: 'farm_overflow_presets_loaded',
+        FARM_OVERFLOW_LOGS_UPDATED: 'farm_overflow_log_updated',
+        FARM_OVERFLOW_COMMAND_SENT: 'farm_overflow_command_sent',
+        FARM_OVERFLOW_IGNORED_TARGET: 'farm_overflow_ignored_target',
+        FARM_OVERFLOW_VILLAGE_IGNORED: 'farm_overflow_village_ignored',
+        FARM_OVERFLOW_EXCEPTION_VILLAGES_UPDATED: 'farm_overflow_exception_villages_updated',
+        FARM_OVERFLOW_FARMER_VILLAGES_UPDATED: 'farm_overflow_farmer_villages_updated',
+        FARM_OVERFLOW_REPORTS_UPDATED: 'farm_overflow_reports_updated',
+        FARM_OVERFLOW_EXCEPTION_LOGS_UPDATED: 'farm_overflow_exception_logs_updated'
+    })
+})
+
+define('two/farmOverflow/ui', [
+    'two/ui',
+    'two/farmOverflow',
+    'two/farmOverflow/types/errors',
+    'two/farmOverflow/types/logs',
+    'two/farmOverflow/settings',
+    'two/Settings',
+    'two/EventScope',
+    'two/utils',
+    'queues/EventQueue',
+    'struct/MapData',
+    'helper/time',
+], function (
+    interfaceOverflow,
+    farmOverflow,
+    ERROR_TYPES,
+    LOG_TYPES,
+    SETTINGS,
+    Settings,
+    EventScope,
+    utils,
+    eventQueue,
+    $mapData,
+    timeHelper
+) {
+    let $scope
+    let settings
+    let presetList = modelDataService.getPresetList()
+    let groupList = modelDataService.getGroupList()
+    let $button
+    let villagesInfo = {}
+    let villagesLabel = {}
+
+    const TAB_TYPES = {
+        SETTINGS: 'settings',
+        VILLAGES: 'villages',
+        LOGS: 'logs'
+    }
+
+    const updateVisibleLogs = function () {
+        const offset = $scope.pagination.offset
+        const limit = $scope.pagination.limit
+
+        $scope.visibleLogs = $scope.logs.slice(offset, offset + limit)
+        $scope.pagination.count = $scope.logs.length
+
+        $scope.visibleLogs.forEach(function (log) {
+            if (log.villageId) {
+                loadVillageInfo(log.villageId)
+            }
+        })
+    }
+
+    const loadVillageInfo = function (villageId) {
+        if (villagesInfo[villageId]) {
+            return villagesInfo[villageId]
+        }
+
+        villagesInfo[villageId] = true
+        villagesLabel[villageId] = 'LOADING...'
+
+        socketService.emit(routeProvider.MAP_GET_VILLAGE_DETAILS, {
+            my_village_id: modelDataService.getSelectedVillage().getId(),
+            village_id: villageId,
+            num_reports: 1
+        }, function (data) {
+            villagesInfo[villageId] = {
+                x: data.village_x,
+                y: data.village_y,
+                name: data.village_name,
+                last_report: data.last_reports[0]
+            }
+
+            villagesLabel[villageId] = `${data.village_name} (${data.village_x}|${data.village_y})`
+        })
+    }
+
+    const loadExceptionsInfo = function () {
+        $scope.exceptionVillages.included.forEach(function (villageId) {
+            loadVillageInfo(villageId)
+        })
+        $scope.exceptionVillages.ignored.forEach(function (villageId) {
+            loadVillageInfo(villageId)
+        })
+    }
+
+    const switchFarm = function () {
+        if (farmOverflow.isRunning()) {
+            farmOverflow.stop()
+        } else {
+            farmOverflow.start()
+        }
+    }
+
+    const selectTab = function (tabType) {
+        $scope.selectedTab = tabType
+    }
+
+    const saveSettings = function () {
+        settings.setAll(settings.decode($scope.settings))
+
+        $rootScope.$broadcast(eventTypeProvider.MESSAGE_SUCCESS, {
+            message: $filter('i18n')('settings_saved', $rootScope.loc.ale, 'farm_overflow')
+        })
+    }
+
+    const removeIgnored = function (villageId) {
+        const groupIgnore = settings.get(SETTINGS.GROUP_IGNORE)
+        const groupVillages = modelDataService.getGroupList().getGroupVillageIds(groupIgnore)
+
+        if (!groupVillages.includes(villageId)) {
+            return false
+        }
+
+        socketService.emit(routeProvider.GROUPS_UNLINK_VILLAGE, {
+            group_id: groupIgnore,
+            village_id: villageId
+        })
+    }
+
+    const removeIncluded = function (villageId) {
+        const groupsInclude = settings.get(SETTINGS.GROUP_INCLUDE)
+
+        groupsInclude.forEach(function (groupId) {
+            let groupVillages = modelDataService.getGroupList().getGroupVillageIds(groupId)
+
+            if (groupVillages.includes(villageId)) {
+                socketService.emit(routeProvider.GROUPS_UNLINK_VILLAGE, {
+                    group_id: groupId,
+                    village_id: villageId
+                })
+            }
+        })
+    }
+
+    const eventHandlers = {
+        updatePresets: function () {
+            $scope.presets = Settings.encodeList(presetList.getPresets(), {
+                disabled: false,
+                type: 'presets'
+            })
+        },
+        updateGroups: function () {
+            $scope.groups = Settings.encodeList(groupList.getGroups(), {
+                disabled: false,
+                type: 'groups'
+            })
+
+            $scope.groupsWithDisabled = Settings.encodeList(groupList.getGroups(), {
+                disabled: true,
+                type: 'groups'
+            })
+        },
+        start: function () {
+            $scope.running = true
+
+            $rootScope.$broadcast(eventTypeProvider.MESSAGE_SUCCESS, {
+                message: $filter('i18n')('farm_started', $rootScope.loc.ale, 'farm_overflow')
+            })
+        },
+        stop: function (event, data) {
+            $scope.running = false
+
+            switch (data.reason) {
+            case ERROR_TYPES.NO_PRESETS:
+                $rootScope.$broadcast(eventTypeProvider.MESSAGE_SUCCESS, {
+                    message: $filter('i18n')('no_preset', $rootScope.loc.ale, 'farm_overflow')
+                })
+                break
+
+            default:
+            case ERROR_TYPES.USER_STOP:
+                $rootScope.$broadcast(eventTypeProvider.MESSAGE_SUCCESS, {
+                    message: $filter('i18n')('farm_stopped', $rootScope.loc.ale, 'farm_overflow')
+                })
+                break
+            }
+        },
+        updateLogs: function () {
+            $scope.logs = angular.copy(farmOverflow.getLogs())
+            updateVisibleLogs()
+
+            if (!$scope.logs.length) {
+                $rootScope.$broadcast(eventTypeProvider.MESSAGE_SUCCESS, {
+                    message: $filter('i18n')('reseted_logs', $rootScope.loc.ale, 'farm_overflow')
+                })
+            }
+        },
+        updateFarmerVillages: function () {
+            $scope.farmers = farmOverflow.getAll()
+        },
+        updateExceptionVillages: function () {
+            $scope.exceptionVillages = farmOverflow.getExceptionVillages()
+            loadExceptionsInfo()
+        },
+        updateExceptionLogs: function () {
+            $scope.exceptionLogs = farmOverflow.getExceptionLogs()
+        }
+    }
+
+    const init = function () {
+        settings = farmOverflow.getSettings()
+        $button = interfaceOverflow.addMenuButton('Farmer', 10)
+
+        $button.addEventListener('click', function () {
+            buildWindow()
+        })
+
+        eventQueue.register(eventTypeProvider.FARM_OVERFLOW_START, function () {
+            $button.classList.remove('btn-green')
+            $button.classList.add('btn-red')
+        })
+
+        eventQueue.register(eventTypeProvider.FARM_OVERFLOW_STOP, function () {
+            $button.classList.remove('btn-red')
+            $button.classList.add('btn-green')
+        })
+
+        interfaceOverflow.addTemplate('twoverflow_farm_overflow_window', `<div id=\"two-farmoverflow\" class=\"win-content two-window\">
+																																																																																																																																																																																																																																																																																																																																																																															<header class=\"win-head\">
+																																																																																																																																																																																																																																																																																																																																																																																<h2>FarmOverflow</h2>
+																																																																																																																																																																																																																																																																																																																																																																																<ul class=\"list-btn\">
+																																																																																																																																																																																																																																																																																																																																																																																	<li>
+																																																																																																																																																																																																																																																																																																																																																																																		<a href=\"#\" class=\"size-34x34 btn-red icon-26x26-close\" ng-click=\"closeWindow()\"/>
+																																																																																																																																																																																																																																																																																																																																																																																	</ul>
+																																																																																																																																																																																																																																																																																																																																																																																</header>
+																																																																																																																																																																																																																																																																																																																																																																																<div class=\"win-main\" scrollbar=\"\">
+																																																																																																																																																																																																																																																																																																																																																																																	<div class=\"tabs tabs-bg\">
+																																																																																																																																																																																																																																																																																																																																																																																		<div class=\"tabs-three-col\">
+																																																																																																																																																																																																																																																																																																																																																																																			<div class=\"tab\" ng-click=\"selectTab(TAB_TYPES.SETTINGS)\" ng-class=\"{'tab-active': selectedTab == TAB_TYPES.SETTINGS}\">
+																																																																																																																																																																																																																																																																																																																																																																																				<div class=\"tab-inner\">
+																																																																																																																																																																																																																																																																																																																																																																																					<div ng-class=\"{'box-border-light': selectedTab === TAB_TYPES.SETTINGS}\">
+																																																																																																																																																																																																																																																																																																																																																																																						<a href=\"#\" ng-class=\"{'btn-icon btn-orange': selectedTab !== TAB_TYPES.SETTINGS}\">{{ TAB_TYPES.SETTINGS | i18n:loc.ale:'common' }}</a>
+																																																																																																																																																																																																																																																																																																																																																																																					</div>
+																																																																																																																																																																																																																																																																																																																																																																																				</div>
+																																																																																																																																																																																																																																																																																																																																																																																			</div>
+																																																																																																																																																																																																																																																																																																																																																																																			<div class=\"tab\" ng-click=\"selectTab(TAB_TYPES.VILLAGES)\" ng-class=\"{'tab-active': selectedTab == TAB_TYPES.VILLAGES}\">
+																																																																																																																																																																																																																																																																																																																																																																																				<div class=\"tab-inner\">
+																																																																																																																																																																																																																																																																																																																																																																																					<div ng-class=\"{'box-border-light': selectedTab === TAB_TYPES.VILLAGES}\">
+																																																																																																																																																																																																																																																																																																																																																																																						<a href=\"#\" ng-class=\"{'btn-icon btn-orange': selectedTab !== TAB_TYPES.VILLAGES}\">{{ TAB_TYPES.VILLAGES | i18n:loc.ale:'common' }}</a>
+																																																																																																																																																																																																																																																																																																																																																																																					</div>
+																																																																																																																																																																																																																																																																																																																																																																																				</div>
+																																																																																																																																																																																																																																																																																																																																																																																			</div>
+																																																																																																																																																																																																																																																																																																																																																																																			<div class=\"tab\" ng-click=\"selectTab(TAB_TYPES.LOGS)\" ng-class=\"{'tab-active': selectedTab == TAB_TYPES.LOGS}\">
+																																																																																																																																																																																																																																																																																																																																																																																				<div class=\"tab-inner\">
+																																																																																																																																																																																																																																																																																																																																																																																					<div ng-class=\"{'box-border-light': selectedTab === TAB_TYPES.LOGS}\">
+																																																																																																																																																																																																																																																																																																																																																																																						<a href=\"#\" ng-class=\"{'btn-icon btn-orange': selectedTab !== TAB_TYPES.LOGS}\">{{ TAB_TYPES.LOGS | i18n:loc.ale:'common' }}</a>
+																																																																																																																																																																																																																																																																																																																																																																																					</div>
+																																																																																																																																																																																																																																																																																																																																																																																				</div>
+																																																																																																																																																																																																																																																																																																																																																																																			</div>
+																																																																																																																																																																																																																																																																																																																																																																																		</div>
+																																																																																																																																																																																																																																																																																																																																																																																	</div>
+																																																																																																																																																																																																																																																																																																																																																																																	<div class=\"box-paper footer\">
+																																																																																																																																																																																																																																																																																																																																																																																		<div class=\"scroll-wrap\">
+																																																																																																																																																																																																																																																																																																																																																																																			<div class=\"settings\" ng-show=\"selectedTab === TAB_TYPES.SETTINGS\">
+																																																																																																																																																																																																																																																																																																																																																																																				<table class=\"tbl-border-light tbl-content tbl-medium-height\">
+																																																																																																																																																																																																																																																																																																																																																																																					<col>
+																																																																																																																																																																																																																																																																																																																																																																																						<col width=\"200px\">
+																																																																																																																																																																																																																																																																																																																																																																																							<tr>
+																																																																																																																																																																																																																																																																																																																																																																																								<th colspan=\"2\">{{ 'groups_presets' | i18n:loc.ale:'farm_overflow' }}<tr>
+																																																																																																																																																																																																																																																																																																																																																																																										<td>
+																																																																																																																																																																																																																																																																																																																																																																																											<span class=\"ff-cell-fix\">{{ 'presets' | i18n:loc.ale:'farm_overflow' }}</span>
+																																																																																																																																																																																																																																																																																																																																																																																											<td>
+																																																																																																																																																																																																																																																																																																																																																																																												<div select=\"\" list=\"presets\" selected=\"settings[SETTINGS.PRESETS]\" drop-down=\"true\"/>
+																																																																																																																																																																																																																																																																																																																																																																																												<tr>
+																																																																																																																																																																																																																																																																																																																																																																																													<td>
+																																																																																																																																																																																																																																																																																																																																																																																														<span class=\"ff-cell-fix\">{{ 'group_ignored' | i18n:loc.ale:'farm_overflow' }}</span>
+																																																																																																																																																																																																																																																																																																																																																																																														<td>
+																																																																																																																																																																																																																																																																																																																																																																																															<div select=\"\" list=\"groupsWithDisabled\" selected=\"settings[SETTINGS.GROUP_IGNORE]\" drop-down=\"true\"/>
+																																																																																																																																																																																																																																																																																																																																																																																															<tr>
+																																																																																																																																																																																																																																																																																																																																																																																																<td>
+																																																																																																																																																																																																																																																																																																																																																																																																	<span class=\"ff-cell-fix\">{{ 'group_include' | i18n:loc.ale:'farm_overflow' }}</span>
+																																																																																																																																																																																																																																																																																																																																																																																																	<td>
+																																																																																																																																																																																																																																																																																																																																																																																																		<div select=\"\" list=\"groups\" selected=\"settings[SETTINGS.GROUP_INCLUDE]\" drop-down=\"true\"/>
+																																																																																																																																																																																																																																																																																																																																																																																																		<tr>
+																																																																																																																																																																																																																																																																																																																																																																																																			<td>
+																																																																																																																																																																																																																																																																																																																																																																																																				<span class=\"ff-cell-fix\">{{ 'group_only' | i18n:loc.ale:'farm_overflow' }}</span>
+																																																																																																																																																																																																																																																																																																																																																																																																				<td>
+																																																																																																																																																																																																																																																																																																																																																																																																					<div select=\"\" list=\"groups\" selected=\"settings[SETTINGS.GROUP_ONLY]\" drop-down=\"true\"/>
+																																																																																																																																																																																																																																																																																																																																																																																																				</table>
+																																																																																																																																																																																																																																																																																																																																																																																																				<table class=\"tbl-border-light tbl-content tbl-medium-height\">
+																																																																																																																																																																																																																																																																																																																																																																																																					<col>
+																																																																																																																																																																																																																																																																																																																																																																																																						<col width=\"200px\">
+																																																																																																																																																																																																																																																																																																																																																																																																							<col width=\"60px\">
+																																																																																																																																																																																																																																																																																																																																																																																																								<tr>
+																																																																																																																																																																																																																																																																																																																																																																																																									<th colspan=\"3\">{{ 'misc' | i18n:loc.ale:'farm_overflow' }}<tr>
+																																																																																																																																																																																																																																																																																																																																																																																																											<td>
+																																																																																																																																																																																																																																																																																																																																																																																																												<span class=\"ff-cell-fix\">{{ 'attack_interval' | i18n:loc.ale:'farm_overflow' }}</span>
+																																																																																																																																																																																																																																																																																																																																																																																																												<td>
+																																																																																																																																																																																																																																																																																																																																																																																																													<div range-slider=\"\" min=\"0\" max=\"30\" value=\"settings[SETTINGS.ATTACK_INTERVAL]\" enabled=\"true\"/>
+																																																																																																																																																																																																																																																																																																																																																																																																													<td class=\"cell-bottom\">
+																																																																																																																																																																																																																																																																																																																																																																																																														<input class=\"fit textfield-border text-center\" ng-model=\"settings[SETTINGS.ATTACK_INTERVAL]\">
+																																																																																																																																																																																																																																																																																																																																																																																																															<tr>
+																																																																																																																																																																																																																																																																																																																																																																																																																<td>
+																																																																																																																																																																																																																																																																																																																																																																																																																	<span class=\"ff-cell-fix\">{{ 'preserve_command_slots' | i18n:loc.ale:'farm_overflow' }}</span>
+																																																																																																																																																																																																																																																																																																																																																																																																																	<td>
+																																																																																																																																																																																																																																																																																																																																																																																																																		<div range-slider=\"\" min=\"0\" max=\"50\" value=\"settings[SETTINGS.PRESERVE_COMMAND_SLOTS]\" enabled=\"true\"/>
+																																																																																																																																																																																																																																																																																																																																																																																																																		<td class=\"cell-bottom\">
+																																																																																																																																																																																																																																																																																																																																																																																																																			<input class=\"fit textfield-border text-center\" ng-model=\"settings[SETTINGS.PRESERVE_COMMAND_SLOTS]\">
+																																																																																																																																																																																																																																																																																																																																																																																																																				<tr>
+																																																																																																																																																																																																																																																																																																																																																																																																																					<td colspan=\"2\">
+																																																																																																																																																																																																																																																																																																																																																																																																																						<span class=\"ff-cell-fix\">{{ 'ignore_on_loss' | i18n:loc.ale:'farm_overflow' }}</span>
+																																																																																																																																																																																																																																																																																																																																																																																																																						<td>
+																																																																																																																																																																																																																																																																																																																																																																																																																							<div switch-slider=\"\" enabled=\"settings[SETTINGS.GROUP_IGNORE].value\" border=\"true\" value=\"settings[SETTINGS.IGNORE_ON_LOSS]\" vertical=\"false\" size=\"'56x28'\"/>
+																																																																																																																																																																																																																																																																																																																																																																																																																							<tr>
+																																																																																																																																																																																																																																																																																																																																																																																																																								<td colspan=\"2\">
+																																																																																																																																																																																																																																																																																																																																																																																																																									<span class=\"ff-cell-fix\">{{ 'ignore_full_storage' | i18n:loc.ale:'farm_overflow' }}</span>
+																																																																																																																																																																																																																																																																																																																																																																																																																									<td>
+																																																																																																																																																																																																																																																																																																																																																																																																																										<div switch-slider=\"\" enabled=\"true\" border=\"true\" value=\"settings[SETTINGS.IGNORE_FULL_STORAGE]\" vertical=\"false\" size=\"'56x28'\"/>
+																																																																																																																																																																																																																																																																																																																																																																																																																									</table>
+																																																																																																																																																																																																																																																																																																																																																																																																																									<table class=\"tbl-border-light tbl-content tbl-medium-height\">
+																																																																																																																																																																																																																																																																																																																																																																																																																										<col>
+																																																																																																																																																																																																																																																																																																																																																																																																																											<col width=\"200px\">
+																																																																																																																																																																																																																																																																																																																																																																																																																												<col width=\"60px\">
+																																																																																																																																																																																																																																																																																																																																																																																																																													<tr>
+																																																																																																																																																																																																																																																																																																																																																																																																																														<th colspan=\"3\">{{ 'step_cycle_header' | i18n:loc.ale:'farm_overflow' }}<tr>
+																																																																																																																																																																																																																																																																																																																																																																																																																																<td colspan=\"2\">
+																																																																																																																																																																																																																																																																																																																																																																																																																																	<span class=\"ff-cell-fix\">{{ 'target_single_attack' | i18n:loc.ale:'farm_overflow' }}</span>
+																																																																																																																																																																																																																																																																																																																																																																																																																																	<td>
+																																																																																																																																																																																																																																																																																																																																																																																																																																		<div switch-slider=\"\" enabled=\"true\" border=\"true\" value=\"settings[SETTINGS.TARGET_SINGLE_ATTACK]\" vertical=\"false\" size=\"'56x28'\"/>
+																																																																																																																																																																																																																																																																																																																																																																																																																																		<tr>
+																																																																																																																																																																																																																																																																																																																																																																																																																																			<td colspan=\"2\">
+																																																																																																																																																																																																																																																																																																																																																																																																																																				<span class=\"ff-cell-fix\">{{ 'target_multiple_farmers' | i18n:loc.ale:'farm_overflow' }}</span>
+																																																																																																																																																																																																																																																																																																																																																																																																																																				<td>
+																																																																																																																																																																																																																																																																																																																																																																																																																																					<div switch-slider=\"\" enabled=\"true\" border=\"true\" value=\"settings[SETTINGS.TARGET_MULTIPLE_FARMERS]\" vertical=\"false\" size=\"'56x28'\"/>
+																																																																																																																																																																																																																																																																																																																																																																																																																																					<tr>
+																																																																																																																																																																																																																																																																																																																																																																																																																																						<td>
+																																																																																																																																																																																																																																																																																																																																																																																																																																							<span class=\"ff-cell-fix\">{{ 'farmer_cycle_interval' | i18n:loc.ale:'farm_overflow' }}</span>
+																																																																																																																																																																																																																																																																																																																																																																																																																																							<td>
+																																																																																																																																																																																																																																																																																																																																																																																																																																								<div range-slider=\"\" min=\"0\" max=\"120\" value=\"settings[SETTINGS.FARMER_CYCLE_INTERVAL]\" enabled=\"true\"/>
+																																																																																																																																																																																																																																										
