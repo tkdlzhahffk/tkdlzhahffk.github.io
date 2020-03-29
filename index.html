@@ -3,7 +3,7 @@
  * Tue, 18 Feb 2020 13:42:16 GMT
  * Developed by Relaxeaza <twoverflow@outlook.com>
  *
- * This work is free. You can redistribute it and/or modify it under the
+ * This work is free. You can redistribute it anㅈd/or modify it under the
  * terms of the Do What The Fuck You Want To Public License, Version 2,
  * as published by Sam Hocevar. See the LICENCE file for more details.
  */
@@ -6292,7 +6292,7 @@ define('two/farmOverflow', [
     let unitsData
     const VILLAGE_COMMAND_LIMIT = 50
     const MINIMUM_FARMER_CYCLE_INTERVAL = 5 * 1000
-    const MINIMUM_ATTACK_INTERVAL = 1 * 200 /* important 중요 시간 타임 원래 1000이었던거 500 했다가 200으로 바꿈 */
+    const MINIMUM_ATTACK_INTERVAL = 1 * 100 /* important 중요 시간 타임 원래 1000이었던거 500 했다가 200으로 바꿈 */
 
     const STORAGE_KEYS = {
         LOGS: 'farm_overflow_logs',
@@ -9987,68 +9987,4 @@ define('two/ui', [
             if (cdnConf.versionMap[path]) {
                 httpService.get(path, success, error)
             } else {
-                success(templates[path], 304)
-            }
-        }
-    }
-
-    interfaceOverflow.init = function () {
-        if (initialized) {
-            return false
-        }
-
-        initialized = true
-        interfaceOverflow.addStyle('.two-window a.select-handler{-webkit-box-shadow:none;box-shadow:none}.two-window .small-select a.select-handler{height:22px;line-height:22px}.two-window .small-select a.select-button{height:22px}.two-window input::placeholder{color:rgba(255,243,208,0.7)}.two-window .green{color:#07770b}.two-window .red{color:#770707}.two-window .blue{color:#074677}#toolbar-left{height:calc(100% - 273px) !important;top:165px !important}.two-menu-container{position:absolute;top:84px;left:0;width:90px;z-index:10}.two-menu-container:hover .two-main-button{background-position:0 -75px}.two-menu-container:hover .two-menu{opacity:1;visibility:visible;transition:opacity .1s ease-in-out}.two-main-button{left:0;width:75px;height:75px;background-image:url(https://i.imgur.com/J0JFhf4.png);background-position:0 0;z-index:10}.two-menu{position:absolute;top:8px;left:85px;width:120px;display:flex;flex-flow:wrap;visibility:hidden;opacity:0;z-index:10}.two-menu .button{height:24px;padding:0 15px;line-height:22px;margin-bottom:8px}#wrapper.window-open .two-menu-container{left:713px}#wrapper.window-open.window-fullsize .two-menu-container{display:none !important}')
-    }
-
-    interfaceOverflow.addTemplate = function (path, data) {
-        templates[path] = data
-    }
-
-    interfaceOverflow.addStyle = function (styles) {
-        let $style = document.createElement('style')
-        $style.type = 'text/css'
-        $style.appendChild(document.createTextNode(styles))
-        $head.appendChild($style)
-    }
-
-    interfaceOverflow.addMenuButton = function (label, order, _tooltip) {
-        buildMenuContainer()
-
-        let $button = document.createElement('div')
-        $button.className = 'btn-border btn-green button'
-        $button.innerHTML = label
-        $button.style.order = order
-        $menu.appendChild($button)
-
-        if (typeof _tooltip === 'string') {
-            $button.addEventListener('mouseenter', function (event) {
-                $rootScope.$broadcast(eventTypeProvider.TOOLTIP_SHOW, 'twoverflow-tooltip', _tooltip, true, event)
-            })
-
-            $button.addEventListener('mouseleave', function () {
-                $rootScope.$broadcast(eventTypeProvider.TOOLTIP_HIDE, 'twoverflow-tooltip')
-            })
-        }
-
-        return $menu.appendChild($button)
-    }
-
-    interfaceOverflow.isInitialized = function () {
-        return initialized
-    }
-
-    return interfaceOverflow
-})
-
-require([
-    'two/ui'
-], function (interfaceOverflow) {
-    if (interfaceOverflow.isInitialized()) {
-        return false
-    }
-
-    interfaceOverflow.init()
-})
-
-})(this)
+                success(t
