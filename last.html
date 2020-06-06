@@ -4370,7 +4370,7 @@ define('two/commandQueue', [
     mapData,
     Lockr
 ) {
-    const CHECKS_PER_SECOND = 10
+    const CHECKS_PER_SECOND = 1  /* 중요 10이었음 */ 
     const ERROR_CODES = {
         INVALID_ORIGIN: 'invalid_rigin',
         INVALID_TARGET: 'invalid_target'
