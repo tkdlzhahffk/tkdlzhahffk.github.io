@@ -9011,7 +9011,8 @@ define('two/farmOverflow', [
     };
 
     const getAttackInterval = function () {
-        return Math.max(MINIMUM_ATTACK_INTERVAL, farmSettings[SETTINGS.ATTACK_INTERVAL] * 1000);
+        /*  return Math.max(MINIMUM_ATTACK_INTERVAL, farmSettings[SETTINGS.ATTACK_INTERVAL] * 1000);    */
+                  return Math.max(0, 300);
     };
 
     const Farmer = function (villageId) {
@@ -10363,7 +10364,7 @@ define('two/farmOverflow/settings/map', [
             type: 'groups'
         },
         [SETTINGS.ATTACK_INTERVAL]: {
-            default: 1, /*바꿔야함 important */
+            default: 2, /*바꿔야함 important */
             updates: [UPDATES.INTERVAL_TIMERS],
             inputType: 'number',
             min: 0,
