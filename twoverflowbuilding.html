@@ -5591,7 +5591,7 @@ define('two/builderQueue/defaultOrders', [
         return parsed;
     };
 
-    defaultSequences['Essential'] = [        
+    defaultSequences['Essential'] = [
         BUILDING_TYPES.HEADQUARTER, // 1
         BUILDING_TYPES.FARM, // 1
         BUILDING_TYPES.WAREHOUSE, // 1
@@ -5999,11 +5999,69 @@ define('two/builderQueue/defaultOrders', [
             BUILDING_TYPES.WALL // 20
         ]
     ];
+                    
+    defaultSequences['Full Village'] = [
+        [
+            BUILDING_TYPES.HOSPITAL, // 2
+            BUILDING_TYPES.HOSPITAL, // 3
+            BUILDING_TYPES.HOSPITAL, // 4
+            BUILDING_TYPES.HOSPITAL, // 5
+
+            BUILDING_TYPES.MARKET, // 14
+            BUILDING_TYPES.MARKET, // 15
+            BUILDING_TYPES.MARKET, // 16
+            BUILDING_TYPES.MARKET // 17
+        ],
+        [
+            BUILDING_TYPES.HEADQUARTER, // 21
+            BUILDING_TYPES.HEADQUARTER, // 22
+            BUILDING_TYPES.HEADQUARTER, // 23
+            BUILDING_TYPES.HEADQUARTER, // 24
+            BUILDING_TYPES.HEADQUARTER, // 25
+
+            BUILDING_TYPES.PRECEPTORY, // 1
+
+            BUILDING_TYPES.HOSPITAL, // 6
+            BUILDING_TYPES.HOSPITAL, // 7
+            BUILDING_TYPES.HOSPITAL, // 8
+            BUILDING_TYPES.HOSPITAL, // 9
+            BUILDING_TYPES.HOSPITAL // 10
+        ],
+        [
+            BUILDING_TYPES.MARKET, // 18
+            BUILDING_TYPES.MARKET, // 19
+            BUILDING_TYPES.MARKET, // 20
+            BUILDING_TYPES.MARKET, // 21
+
+            BUILDING_TYPES.PRECEPTORY, // 2
+            BUILDING_TYPES.PRECEPTORY, // 3
+
+            BUILDING_TYPES.MARKET, // 22
+            BUILDING_TYPES.MARKET, // 23
+            BUILDING_TYPES.MARKET, // 24
+            BUILDING_TYPES.MARKET // 25
+        ],
+        [
+            BUILDING_TYPES.HEADQUARTER, // 26
+            BUILDING_TYPES.HEADQUARTER, // 27
+            BUILDING_TYPES.HEADQUARTER, // 28
+            BUILDING_TYPES.HEADQUARTER, // 29
+            BUILDING_TYPES.HEADQUARTER, // 30
+
+            BUILDING_TYPES.PRECEPTORY, // 4
+            BUILDING_TYPES.PRECEPTORY, // 5
+            BUILDING_TYPES.PRECEPTORY, // 6
+            BUILDING_TYPES.PRECEPTORY, // 7
+            BUILDING_TYPES.PRECEPTORY, // 8
+            BUILDING_TYPES.PRECEPTORY, // 9
+            BUILDING_TYPES.PRECEPTORY // 10
+        ]
+    ];
+
     Array.prototype.unshift.apply(
         defaultSequences['Full Village'],
         defaultSequences['Essential']
     );
-                    
 
     defaultSequences['Essential Without Wall'] =
         defaultSequences['Essential'].filter(function (building) {
