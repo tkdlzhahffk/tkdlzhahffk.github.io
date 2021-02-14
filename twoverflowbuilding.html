@@ -5591,7 +5591,7 @@ define('two/builderQueue/defaultOrders', [
         return parsed;
     };
 
-    defaultSequences['Essential'] = [
+    defaultSequences['Zealot'] = [
             BUILDING_TYPES.HEADQUARTER,
             BUILDING_TYPES.FARM,
             BUILDING_TYPES.WAREHOUSE,
@@ -5854,7 +5854,12 @@ define('two/builderQueue/defaultOrders', [
 
     Array.prototype.unshift.apply(
         defaultSequences['Full Village'],
-        defaultSequences['Essential']
+//        defaultSequences['Essential']
+    );
+                    
+    Array.prototype.unshift.apply(
+        defaultSequences['Zealot'],
+//        defaultSequences['Essential']
     );
 
     defaultSequences['Essential Without Wall'] =
