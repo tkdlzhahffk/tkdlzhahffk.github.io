@@ -9683,11 +9683,11 @@ define('two/farmOverflow', [
                 .then(checkStorage)
                 .then(selectTarget)
                 .then(checkTarget)
-             //   .then(checkPresets)
+                .then(checkPresets)
                 .then(selectPreset)
                 .then(checkLocalCommands)
-            //    .then(minimumInterval)
-            //    .then(checkLoadedCommands)
+                .then(minimumInterval)
+                .then(checkLoadedCommands)
                 .then(resolve)
                 .catch(reject);
         });
