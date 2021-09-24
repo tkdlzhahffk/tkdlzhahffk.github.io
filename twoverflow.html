@@ -8688,8 +8688,8 @@ define('two/farmOverflow', [
     let nextCycleDate = null;
     const PERSISTENT_RUNNING_CHECK_INTERVAL = 30 * 1000;
     const VILLAGE_COMMAND_LIMIT = 50;
-    const MINIMUM_FARMER_CYCLE_INTERVAL = 1; // minutes
-    const MINIMUM_ATTACK_INTERVAL = 0; // seconds
+    const MINIMUM_FARMER_CYCLE_INTERVAL = 5 * 1000; // minutes
+    const MINIMUM_ATTACK_INTERVAL = 1 * 500; // seconds
     const STEP_EXPIRE_TIME = 60 * 1000;
     const CYCLE_BEGIN = 'cycle_begin';
     const IGNORE_UPDATES = 'ignore_update';
@@ -9221,8 +9221,8 @@ define('two/farmOverflow', [
     };
 
     const getAttackInterval = function () {
-        /*  return Math.max(MINIMUM_ATTACK_INTERVAL, farmSettings[SETTINGS.ATTACK_INTERVAL] * 1000);    */
-                  return Math.max(0, 10);
+          return Math.max(MINIMUM_ATTACK_INTERVAL, farmSettings[SETTINGS.ATTACK_INTERVAL] * 1000);    
+            /*     return Math.max(0, 10);  */
     };
 
     const Farmer = function (villageId) {
