@@ -13162,7 +13162,7 @@ define('two/farmoverviewactiveunits/settings/map', [
             type: 'groups'
         },
         [SETTINGS.ATTACK_INTERVAL]: {
-            default: '2 seconds',
+            default: '0 seconds',
             updates: [UPDATES.INTERVAL_TIMERS],
             inputType: 'readable_time'
         },
@@ -13177,7 +13177,7 @@ define('two/farmoverviewactiveunits/settings/map', [
             inputType: 'readable_time'
         },
         [SETTINGS.PRESERVE_COMMAND_SLOTS]: {
-            default: 5,
+            default: 1,
             updates: [],
             inputType: 'number',
             min: 0,
@@ -13239,17 +13239,17 @@ define('two/farmoverviewactiveunits/settings/map', [
             inputType: 'readable_time'
         },
         [SETTINGS.LOGS_LIMIT]: {
-            default: 500,
+            default: 100,
             updates: [UPDATES.LOGS],
             inputType: 'number',
             min: 0,
-            max: 2000
+            max: 500
         },
         [SETTINGS.TARGET_LIMIT]: {
-            default: 25,
+            default: 1000,
             updates: [UPDATES.TARGETS],
             min: 0,
-            max: 500
+            max: 1000
         },
         [SETTINGS.FARMER_BEHAVIOR]: {
             default: FARMER_BEHAVIOR.ALLOW_MULTIPLE_ATTACK_EACH_TARGET,
