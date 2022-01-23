@@ -11274,11 +11274,11 @@ define('two/farmoverviewactiveunits', [
     let persistentRunningLastCheck = timeHelper.gameTime();
     let persistentRunningTimer = null;
     let nextCycleDate = null;
-    const PERSISTENT_RUNNING_CHECK_INTERVAL = 30 * 1000;
+    const PERSISTENT_RUNNING_CHECK_INTERVAL = 20 * 1000;
     const VILLAGE_COMMAND_LIMIT = 50;
     const MINIMUM_FARMER_CYCLE_INTERVAL = 100; // ms
     const MINIMUM_ATTACK_INTERVAL = 100; // ms
-    const STEP_EXPIRE_TIME = 30 * 1000;
+    const STEP_EXPIRE_TIME = 20 * 1000;
     const CYCLE_BEGIN = 'cycle_begin';
     const IGNORE_UPDATES = 'ignore_update';
     const STORAGE_KEYS = {
@@ -13350,13 +13350,13 @@ define('two/farmoverviewactiveunits/settings/map', [
             updates: [UPDATES.LOGS],
             inputType: 'number',
             min: 0,
-            max: 5000
+            max: 500
         },
         [SETTINGS.TARGET_LIMIT]: {
             default: 25,
             updates: [UPDATES.TARGETS],
             min: 0,
-            max: 1000
+            max: 2000
         },
         [SETTINGS.FARMER_BEHAVIOR]: {
             default: FARMER_BEHAVIOR.ALLOW_MULTIPLE_ATTACK_EACH_TARGET,
