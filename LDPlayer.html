@@ -13311,7 +13311,7 @@ define('two/farmoverviewactiveunits/settings/map', [
             max: 50
         },
         [SETTINGS.MAX_DISTANCE]: {
-            default: 70,
+            default: 20,
             updates: [
                 UPDATES.TARGETS,
                 UPDATES.INTERVAL_TIMERS
@@ -13328,7 +13328,7 @@ define('two/farmoverviewactiveunits/settings/map', [
             ],
             inputType: 'number',
             min: 0,
-            max: 11223
+            max: 10000
         },
         [SETTINGS.MAX_POINTS]: {
             default: 3600,
@@ -13338,10 +13338,10 @@ define('two/farmoverviewactiveunits/settings/map', [
             ],
             inputType: 'number',
             min: 0,
-            max: 11223
+            max: 10000
         },
         [SETTINGS.MAX_TRAVEL_TIME]: {
-            default: '90 minutes',
+            default: '100 minutes',
             updates: [UPDATES.INTERVAL_TIMERS],
             inputType: 'readable_time'
         },
